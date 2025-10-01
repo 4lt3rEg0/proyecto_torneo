@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Juegos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-joystick"></i> Gestión de Juegos</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearJuego">
+        <i class="bi bi-plus-circle"></i> Crear Nuevo Juego
+    </button>
+</div>
+
+<!-- Resumen -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h3>{{ juegos|length }}</h3>
+                <p class="mb-0">Total Juegos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h3>{{ juegos|selectattr('activo')|list|length }}</h3>
+                <p class="mb-0">Juegos Activos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h3>{{ total_inscripciones }}</h3>
+                <p class="mb-0">Total Inscripciones</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Juegos -->
+<div class="card">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Lista de Juegos</h5>
+        <span class="badge bg-primary">{{ juegos|length }} juegos</span>
+    </div>
+    <div class="card-body p-0">
+        {% if juegos %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Fecha Creación</th>
+                        <th>Inscripciones</th>
+                        <th>Partidas</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for juego in juegos %}
+                    <tr>
+                        <td><strong>#{{ juego.id }}</strong></td>
+                        <td>
+                            <h6 class="mb-0">{{ juego.nombre }}</h6>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ juego.descripcion or "Sin descripción"|truncate(50) }}</small>
+                        </td>
+                        <td>{{ juego.fecha_creacion.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ juego.participantes|length }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-warning text-dark">{{ juego.partidas|length }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if juego.activo else 'secondary' }}">
+                                {{ 'Activo' if juego.activo else 'Inactivo' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" title="Ver detalles">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-success" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger"
+                                        onclick="confirmarEliminacion({{ juego.id }}, '{{ juego.nombre }}')"
+                                        title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-joystick display-1 text-muted"></i>
+            <h4 class="text-muted">No hay juegos creados</h4>
+            <p class="text-muted">Comienza creando el primer juego del torneo.</p>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearJuego">
+                <i class="bi bi-plus-circle"></i> Crear Primer Juego
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Crear Juego -->
+<div class="modal fade" id="modalCrearJuego" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Crear Nuevo Juego</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.crear_juego') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Juego</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required
+                               placeholder="Ej: Carrera de Obstáculos">
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"
+                                  placeholder="Describe las reglas y objetivo del juego..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Juego</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmarEliminacion(juegoId, juegoNombre) {
+    if (confirm(`¿Estás seguro de que quieres eliminar el juego "${juegoNombre}"? Esta acción no se puede deshacer.`)) {
+        window.location.href = `/admin/eliminar_juego/${juegoId}`;
+    }
+}
+
+// Auto-focus en el modal
+document.getElementById('modalCrearJuego').addEventListener('shown.bs.modal', function () {
+    document.getElementById('nombre').focus();
+});
+</script>
+{% endblock %}

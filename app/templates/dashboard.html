@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Bienvenida -->
+<div class="alert alert-info mb-4">
+    <h4 class="alert-heading"><i class="bi bi-info-circle"></i> Bienvenido al Sistema de Torneos</h4>
+    <p class="mb-0">Inscríbete en los torneos disponibles y registra tus partidas para aparecer en el ranking.</p>
+</div>
+
+<!-- Estadísticas Rápidas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-joystick display-6"></i>
+                <h3>{{ total_juegos }}</h3>
+                <p class="mb-0">Torneos Activos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-person-check display-6"></i>
+                <h3>{{ total_inscrito }}</h3>
+                <p class="mb-0">Mis Inscripciones</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card bg-warning text-dark">
+            <div class="card-body text-center">
+                <i class="bi bi-trophy display-6"></i>
+                <h3>{{ (total_inscrito / total_juegos * 100)|round|int if total_juegos > 0 else 0 }}%</h3>
+                <p class="mb-0">Progreso</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up display-6"></i>
+                <h3>{{ ranking_promedio or '--' }}</h3>
+                <p class="mb-0">Mi Mejor Posición</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Torneos Activos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="bi bi-trophy"></i> Torneos Activos - Temporada {{ current_year }}</h4>
+                <span class="badge bg-primary">{{ total_juegos }} torneos</span>
+            </div>
+            <div class="card-body">
+                {% if juegos %}
+                <div class="row">
+                    {% for juego in juegos %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card game-card h-100 border-{{ 'success' if juego.id in juegos_inscrito else 'primary' }}">
+                            <div class="card-header bg-{{ 'success' if juego.id in juegos_inscrito else 'primary' }} text-white">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-joystick"></i> {{ juego.nombre }}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ juego.descripcion or "Compite por el primer lugar en este emocionante torneo" }}</p>
+
+                                <!-- Información del Torneo -->
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-people"></i>
+                                        <strong>{{ juego.participantes|length }}</strong> participantes
+                                    </small><br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i>
+                                        Finaliza: {{ (juego.fecha_creacion + timedelta(days=30)).strftime('%d/%m/%Y') }}
+                                    </small>
+                                </div>
+
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar"></i>
+                                    Inició: {{ juego.fecha_creacion.strftime('%d/%m/%Y') }}
+                                </small>
+                            </div>
+                            <div class="card-footer">
+                                {% if juego.id in juegos_inscrito %}
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('main.detalle_juego', juego_id=juego.id) }}"
+                                       class="btn btn-success btn-sm">
+                                        <i class="bi bi-play-circle"></i> Competir
+                                    </a>
+                                    <small class="text-center text-success">
+                                        <i class="bi bi-check-circle"></i> Inscrito - {{ participante_nivel[juego.id] }}
+                                    </small>
+                                </div>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('main.inscribir', juego_id=juego.id) }}">
+                                    <div class="mb-2">
+                                        <label class="form-label small">Selecciona tu nivel:</label>
+                                        <select class="form-select form-select-sm" name="nivel">
+                                            <option value="amateur">Amateur</option>
+                                            <option value="normal" selected>Normal</option>
+                                            <option value="expert">Experto</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                                        <i class="bi bi-person-plus"></i> Inscribirse al Torneo
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-joystick display-1 text-muted"></i>
+                    <h4 class="text-muted">No hay torneos activos</h4>
+                    <p class="text-muted">Contacta al administrador para agregar nuevos torneos.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ranking Global -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0"><i class="bi bi-trophy-fill"></i> Ranking Global de la Temporada</h4>
+            </div>
+            <div class="card-body">
+                {% if ranking_global %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Posición</th>
+                                <th>Jugador</th>
+                                <th>Mejor Puntuación</th>
+                                <th>Torneo</th>
+                                <th>Nivel</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in ranking_global %}
+                            <tr class="{{ 'table-success' if item.usuario_id == current_user.id }}">
+                                <td>
+                                    <strong>#{{ loop.index }}</strong>
+                                    {% if loop.index == 1 %}
+                                    <i class="bi bi-trophy-fill text-warning"></i>
+                                    {% elif loop.index == 2 %}
+                                    <i class="bi bi-trophy-fill text-secondary"></i>
+                                    {% elif loop.index == 3 %}
+                                    <i class="bi bi-trophy-fill text-danger"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ item.nombre }}
+                                    {% if item.usuario_id == current_user.id %}
+                                    <span class="badge bg-info">Tú</span>
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge bg-success">{{ item.max_puntuacion }}</span></td>
+                                <td>{{ item.juego_nombre }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if item.nivel == 'expert' else 'info' if item.nivel == 'normal' else 'secondary' }}">
+                                        {{ item.nivel|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('main.detalle_juego', juego_id=item.juego_id) }}"
+                                           class="btn btn-outline-success">
+                                            Competir
+                                        </a>
+                                        <a href="{{ url_for('main.ranking_juego', juego_id=item.juego_id) }}"
+                                           class="btn btn-outline-primary">
+                                            Ranking
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-emoji-frown display-1 text-muted"></i>
+                    <h5 class="text-muted">No hay partidas registradas aún</h5>
+                    <p class="text-muted">¡Inscríbete en un torneo y registra tu primera partida!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Registro{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white text-center">
+                <h4 class="mb-0"><i class="bi bi-person-plus"></i> Crear Cuenta</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" novalidate>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">Nombre Completo</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" 
+                                   value="{{ request.form.nombre }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ request.form.email }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   minlength="6" required>
+                            <div class="form-text">Mínimo 6 caracteres</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="confirmar" class="form-label">Confirmar Contraseña</label>
+                            <input type="password" class="form-control" id="confirmar" name="confirmar" required>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100 py-2">
+                        <i class="bi bi-person-check"></i> Crear Cuenta
+                    </button>
+                </form>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <small>¿Ya tienes cuenta? 
+                        <a href="{{ url_for('auth.login') }}" class="text-decoration-none">Inicia sesión aquí</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

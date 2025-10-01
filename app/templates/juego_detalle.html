@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}{{ juego.nombre }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Información del Juego -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="bi bi-trophy"></i> Torneo: {{ juego.nombre }}</h4>
+            </div>
+            <div class="card-body">
+                <h5>{{ juego.nombre }}</h5>
+                <p>{{ juego.descripcion or "Sin descripción" }}</p>
+                <hr>
+                <p><strong>Nivel:</strong>
+                    <span class="badge bg-{{ 'warning' if participante.nivel == 'expert' else 'info' if participante.nivel == 'normal' else 'secondary' }}">
+                        {{ participante.nivel|title }}
+                    </span>
+                </p>
+                <p><strong>Inscrito desde:</strong> {{ participante.fecha_inscripcion.strftime('%d/%m/%Y') }}</p>
+            </div>
+        </div>
+
+        <!-- Formulario Registrar Partida -->
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Registrar Partida</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('main.registrar_partida') }}">
+                    <input type="hidden" name="juego_id" value="{{ juego.id }}">
+
+                    <div class="mb-3">
+                        <label for="puntuacion" class="form-label">Puntuación</label>
+                        <input type="number" class="form-control" id="puntuacion" name="puntuacion"
+                               min="0" max="10000" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="tiempo" class="form-label">Tiempo (segundos)</label>
+                        <input type="number" step="0.01" class="form-control" id="tiempo" name="tiempo"
+                               min="0" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-save"></i> Registrar Partida
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas y Ranking -->
+    <div class="col-md-8">
+        <!-- Gráfica de Progreso -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Mi Progreso</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="progresoChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- Ranking Global -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-trophy"></i> Ranking Global</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Posición</th>
+                                <th>Jugador</th>
+                                <th>Puntuación</th>
+                                <th>Tiempo</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in ranking %}
+                            <tr>
+                                <td><strong>#{{ loop.index }}</strong></td>
+                                <td>{{ item.nombre }}</td>
+                                <td><span class="badge bg-success">{{ item.puntuacion }}</span></td>
+                                <td>{{ "%.2f"|format(item.tiempo) }}s</td>
+                                <td><small>{{ item.fecha_partida.strftime('%d/%m/%Y') if item.fecha_partida else 'N/A' }}</small></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No hay partidas registradas</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mis Partidas -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Mis Partidas</h5>
+            </div>
+            <div class="card-body">
+                {% if mis_partidas %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Puntuación</th>
+                                <th>Tiempo</th>
+                                <th>Mejoría</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for partida in mis_partidas %}
+                            <tr>
+                                <td>{{ partida.fecha_partida.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if partida.puntuacion > 500 else 'warning' }}">
+                                        {{ partida.puntuacion }}
+                                    </span>
+                                </td>
+                                <td>{{ "%.2f"|format(partida.tiempo) }}s</td>
+                                <td>
+                                    {% if loop.index > 1 %}
+                                        {% set prev_partida = mis_partidas[loop.index-2] %}
+                                        {% set mejoria = partida.puntuacion - prev_partida.puntuacion %}
+                                        <span class="badge bg-{{ 'success' if mejoria > 0 else 'danger' }}">
+                                            {{ "+" if mejoria > 0 }}{{ mejoria }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-info">Primera</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-emoji-frown display-1 text-muted"></i>
+                    <h5 class="text-muted">No hay partidas registradas</h5>
+                    <p class="text-muted">¡Juega tu primera partida y aparece en el ranking!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Gráfica de Progreso
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('progresoChart').getContext('2d');
+
+    // Datos de ejemplo (deberías obtenerlos de tu API)
+    const progresoChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5'],
+            datasets: [{
+                label: 'Mi Puntuación',
+                data: [450, 620, 580, 750, 820],
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1000
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

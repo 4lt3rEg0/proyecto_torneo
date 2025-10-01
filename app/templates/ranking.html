@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Ranking Global{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-trophy-fill"></i> Ranking Global</h1>
+    <div class="btn-group">
+        <a href="{{ url_for('main.ranking_global') }}" class="btn btn-warning active">Global</a>
+        {% for juego in juegos_activos_list %}
+        <a href="{{ url_for('main.ranking_juego', juego_id=juego.id) }}" class="btn btn-outline-warning">
+            {{ juego.nombre }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Estadísticas -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h3>{{ total_jugadores }}</h3>
+                <p class="mb-0">Jugadores Registrados</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h3>{{ total_partidas }}</h3>
+                <p class="mb-0">Partidas Jugadas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h3>{{ juegos_activos }}</h3>
+                <p class="mb-0">Torneos Activos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Ranking -->
+<div class="card">
+    <div class="card-header bg-warning text-dark">
+        <h4 class="mb-0"><i class="bi bi-trophy"></i> Top 20 Mejores Puntuaciones</h4>
+    </div>
+    <div class="card-body p-0">
+        {% if ranking %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Posición</th>
+                        <th>Jugador</th>
+                        <th>Mejor Puntuación</th>
+                        <th>Torneo</th>
+                        <th>Nivel</th>
+                        <th>Partidas</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ranking %}
+                    <tr class="{% if item.usuario_id == current_user.id %}table-success{% endif %} 
+                               {% if loop.index <= 3 %}ranking-top-{{ loop.index }}{% endif %}">
+                        <td>
+                            <strong>#{{ loop.index }}</strong>
+                            {% if loop.index == 1 %}
+                            <i class="bi bi-trophy-fill text-warning"></i>
+                            {% elif loop.index == 2 %}
+                            <i class="bi bi-trophy-fill text-secondary"></i>
+                            {% elif loop.index == 3 %}
+                            <i class="bi bi-trophy-fill text-danger"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ item.nombre }}
+                            {% if item.usuario_id == current_user.id %}
+                            <span class="badge bg-info">Tú</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-success fs-6">{{ item.mejor_puntuacion }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('main.detalle_juego', juego_id=item.juego_id) }}" 
+                               class="text-decoration-none">
+                                {{ item.juego_nombre }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'warning' if item.nivel == 'expert' else 'info' if item.nivel == 'normal' else 'secondary' }}">
+                                {{ item.nivel|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark">{{ item.total_partidas }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('main.ranking_juego', juego_id=item.juego_id) }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                Ver Torneo
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-emoji-frown display-1 text-muted"></i>
+            <h4 class="text-muted">No hay partidas registradas</h4>
+            <p class="text-muted">¡Sé el primero en aparecer en el ranking!</p>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                <i class="bi bi-joystick"></i> Ir a Torneos
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Gráfica de Distribución -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Distribución por Niveles</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="nivelesChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Top 5 Puntuaciones</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="topPuntuacionesChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Datos para gráficas (simulados - en producción vendrían de la API)
+    const nivelesData = {
+        labels: ['Amateur', 'Normal', 'Experto'],
+        datasets: [{
+            data: [30, 50, 20],
+            backgroundColor: ['#6c757d', '#0d6efd', '#ffc107']
+        }]
+    };
+    
+    const topPuntuacionesData = {
+        labels: ['{{ ranking[0].nombre if ranking else "" }}', '{{ ranking[1].nombre if ranking|length > 1 else "" }}', '{{ ranking[2].nombre if ranking|length > 2 else "" }}', '{{ ranking[3].nombre if ranking|length > 3 else "" }}', '{{ ranking[4].nombre if ranking|length > 4 else "" }}'],
+        datasets: [{
+            label: 'Puntuación',
+            data: [
+                {{ ranking[0].mejor_puntuacion if ranking else 0 }},
+                {{ ranking[1].mejor_puntuacion if ranking|length > 1 else 0 }},
+                {{ ranking[2].mejor_puntuacion if ranking|length > 2 else 0 }},
+                {{ ranking[3].mejor_puntuacion if ranking|length > 3 else 0 }},
+                {{ ranking[4].mejor_puntuacion if ranking|length > 4 else 0 }}
+            ],
+            backgroundColor: ['#ffc107', '#6c757d', '#dc3545', '#0d6efd', '#198754']
+        }]
+    };
+    
+    // Gráfica de niveles
+    const nivelesCtx = document.getElementById('nivelesChart');
+    if (nivelesCtx) {
+        new Chart(nivelesCtx, {
+            type: 'doughnut',
+            data: nivelesData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfica de top puntuaciones
+    const topCtx = document.getElementById('topPuntuacionesChart');
+    if (topCtx) {
+        new Chart(topCtx, {
+            type: 'bar',
+            data: topPuntuacionesData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.ranking-top-1 {
+    background: linear-gradient(45deg, #fff3cd, #ffecb5) !important;
+}
+.ranking-top-2 {
+    background: linear-gradient(45deg, #e2e3e5, #d6d8db) !important;
+}
+.ranking-top-3 {
+    background: linear-gradient(45deg, #f8d7da, #f5c6cb) !important;
+}
+</style>
+{% endblock %}
