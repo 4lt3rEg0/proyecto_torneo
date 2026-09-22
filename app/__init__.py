@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 import os
+import secrets
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -9,7 +10,10 @@ login_manager = LoginManager()
 
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-2024')
+
+    # Use an explicit secret in deployed environments. For local development,
+    # generate a temporary secret instead of hardcoding one in source control.
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 
     # Configuración de Base de Datos desde variables de entorno
     database_url = os.environ.get('DATABASE_URL')
@@ -26,20 +30,17 @@ def create_app():
         'pool_pre_ping': True
     }
 
-    # Inicializar extensiones
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Por favor inicia sesión para acceder a esta página.'
 
-    # User loader para Flask-Login
     from .models import Usuario
 
     @login_manager.user_loader
     def load_user(user_id):
         return Usuario.query.get(int(user_id))
 
-    # Registrar blueprints
     from .routes import main, auth
     app.register_blueprint(main)
     app.register_blueprint(auth, url_prefix='/auth')

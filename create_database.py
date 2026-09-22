@@ -1,28 +1,30 @@
+import os
+
 from app import create_app, db
 from app.models import Usuario, Juego, Participante, Partida
-from datetime import datetime
 
 
 def crear_base_datos():
+    admin_password = os.environ.get("SEED_ADMIN_PASSWORD")
+    if not admin_password:
+        raise RuntimeError("Define SEED_ADMIN_PASSWORD antes de crear los datos de ejemplo.")
+
     app = create_app()
 
     with app.app_context():
-        # Eliminar y crear todas las tablas
         db.drop_all()
         db.create_all()
 
         print("✅ Tablas creadas exitosamente")
 
-        # Crear usuario administrador
         admin = Usuario(
             email='admin@torneo.com',
             nombre='Administrador Principal',
             es_admin=True
         )
-        admin.set_password('admin123')
+        admin.set_password(admin_password)
         db.session.add(admin)
 
-        # Crear juegos de ejemplo
         juegos = [
             Juego(
                 nombre='Carrera de Velocidad Extrema',
@@ -45,15 +47,11 @@ def crear_base_datos():
         db.session.add_all(juegos)
         db.session.commit()
 
-        print("✅ Usuario administrador creado:")
-        print("   Email: admin@torneo.com")
-        print("   Contraseña: admin123")
-
+        print("✅ Usuario administrador creado: admin@torneo.com")
         print("✅ Juegos de ejemplo creados:")
         for juego in juegos:
             print(f"   - {juego.nombre}")
 
-        # Verificar la estructura de las tablas
         print("\n📊 Estructura de la base de datos:")
         print(f"   Usuarios: {Usuario.query.count()}")
         print(f"   Juegos: {Juego.query.count()}")
