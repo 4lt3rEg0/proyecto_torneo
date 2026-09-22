@@ -1,48 +1,76 @@
-# Torneo de Videojuegos - Aplicación Web
+# Torneo de Videojuegos — Flask
 
-Aplicación web desarrollada en Python/Flask para la gestión de torneos de videojuegos.
+Aplicación web para gestionar torneos de videojuegos, participantes, partidas, puntuaciones y rankings.
 
-## Características
+## Funcionalidades
 
--  Sistema de autenticación de usuarios
--  Gestión de juegos y participantes
--  Registro de partidas y puntuaciones
--  Ranking en tiempo real con gráficas
--  Panel de administración completo
--  Diseño responsive con Bootstrap 5
--  Gráficas interactivas con Chart.js
+- Registro e inicio de sesión.
+- Gestión de juegos y participantes.
+- Registro de partidas y puntuaciones.
+- Ranking y gráficas.
+- Panel de administración.
+- Interfaz responsive con Bootstrap.
+
+## Tecnologías
+
+- Python / Flask
+- Flask-SQLAlchemy
+- Flask-Login
+- SQLite
+- Bootstrap 5
+- Chart.js
+- Jinja2
 
 ## Instalación
 
-1. Clonar el repositorio
-2. Crear entorno virtual: `python -m venv venv`
-3. Activar entorno: `venv\Scripts\activate` (Windows)
-4. Instalar dependencias: `pip install -r requirements.txt`
-5. Crear base de datos: `flask create-db`
-6. Poblar con datos de ejemplo: `flask seed-db`
-7. Ejecutar: `python run.py`
+```bash
+python -m venv .venv
+pip install -r requirements.txt
+```
 
-## Estructura del Proyecto
+Crea la base de datos:
 
-proyecto_torneo/
-├── app/
-│ ├── templates/ # Templates HTML
-│ ├── static/ # CSS, JS, imágenes
-│ ├── init.py # Factory de la app
-│ ├── models.py # Modelos de datos
-│ └── routes.py # Rutas de la aplicación
-├── requirements.txt # Dependencias
-└── run.py # Punto de entrada
+```bash
+flask --app run create-db
+```
 
+Para cargar datos de demostración, define una contraseña local para el administrador.
 
-## Usuarios de Prueba
+PowerShell:
 
-- **Admin:** admin@torneo.com / admin123
-- **Usuario normal:** (crear mediante registro)
+```powershell
+$env:SEED_ADMIN_PASSWORD = "elige-una-clave-local"
+flask --app run seed-db
+```
 
-## Tecnologías Utilizadas
+Bash:
 
-- **Backend:** Flask, SQLAlchemy, Flask-Login
-- **Frontend:** Bootstrap 5, Chart.js, Jinja2
-- **Base de datos:** SQLite (desarrollo)
-- **Iconos:** Bootstrap Icons
+```bash
+export SEED_ADMIN_PASSWORD="elige-una-clave-local"
+flask --app run seed-db
+```
+
+Ejecuta:
+
+```bash
+python run.py
+```
+
+Para un despliegue real también debe definirse `SECRET_KEY`. El repositorio no contiene claves, contraseñas ni bases de datos locales.
+
+## Estructura
+
+```text
+app/
+  templates/
+  static/
+  __init__.py
+  models.py
+  routes.py
+run.py
+requirements.txt
+```
+
+## Nota
+
+Proyecto académico centrado en autenticación, modelado relacional, CRUD, rankings y visualización de datos.
